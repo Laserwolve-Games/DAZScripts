@@ -1,0 +1,1 @@
+Get-Process -Name "DAZStudio" | ForEach-Object { $_.Kill() }
