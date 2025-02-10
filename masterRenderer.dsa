@@ -73,44 +73,7 @@ if (nTotalNumberOfInstances) {
 
 		for (var nAngle = 0; nAngle != nDEGREES_IN_CIRCLE; nAngle = nAngle + nDegrees) // Loop through each angle...
 		{
-			var nConstructAngle;
-			switch (nAngle) {
-				// Construct's 0 degrees is east, Daz is south.
-				// Construct's degrees rotate counter-clockwise, Daz rotates clockwise.
-				// Construct degrees range from -180 to 180, or 0 to 360, depending on the system. Daz can accept either but defaults to 0 to 360.
-				case 0: nConstructAngle = 90;
-					break;
-				case 22.5: nConstructAngle = 67.5;
-					break;
-				case 45: nConstructAngle = 45;
-					break;
-				case 67.5: nConstructAngle = 22.5;
-					break;
-				case 90: nConstructAngle = 0;
-					break;
-				case 112.5: nConstructAngle = -22.5;
-					break;
-				case 135: nConstructAngle = -45;
-					break;
-				case 157.5: nConstructAngle = -67.5;
-					break;
-				case 180: nConstructAngle = -90;
-					break;
-				case 202.5: nConstructAngle = -112.5;
-					break;
-				case 225: nConstructAngle = -135;
-					break;
-				case 247.5: nConstructAngle = -157.5;
-					break;
-				case 270: nConstructAngle = 180;
-					break;
-				case 292.5: nConstructAngle = 157.5;
-					break;
-				case 315: nConstructAngle = 135;
-					break;
-				case 337.5: nConstructAngle = 112.5;
-					break;
-			}
+
 			for (var nFrame = 0; nFrame <= nFramesTotal; nFrame++) // Loop through each frame...
 			{
 				// subtract 1 from the instance number to make it 0 based.
@@ -123,7 +86,7 @@ if (nTotalNumberOfInstances) {
 				var sAngleSuffix = '';
 				if (bIsGear) sNameSuffix = '_gear';
 				if (bIsShadow) sNameSuffix += '_shadow';
-				if (sAnimationName !== 'default') sAngleSuffix = '_' + nConstructAngle;
+				if (sAnimationName !== 'default') sAngleSuffix = '_' + nAngle;
 
 				var sFinalFilePath = 'C:/output/' + sName + sNameSuffix + '/' + sAnimationName + sAngleSuffix + '_' + ("000" + nFrame).slice(-3) + '.png';
 
@@ -154,22 +117,28 @@ if (nTotalNumberOfInstances) {
 
 				var oCanvasDirectory = DzDir(sFinalFilePath.replace('.png', '_canvases'));
 
-				if (oCanvasDirectory.exists())  // If a canvases were made, delete all of them, then delete the canvas folder.
+				if (oCanvasDirectory.exists())  // If canvases were made, delete all of them, then delete the canvas folder.
 				{
 					var aCanvases = oCanvasDirectory.getFilesFromDir(['*.exr'], true);
 					for (var i = 0; i != aCanvases.length; i++) oCanvasDirectory.remove(aCanvases[i]);
 					oCanvasDirectory.rmdir();
 				}
+
+				if (DzFileInfo(sFinalFilePath).size() == 4181) print('WARNING: ' + sFinalFilePath + ' is 4181 bytes. It is likely a blank image.');
 			}
 		}
 
 		if (!bIsShadow) renderCore(sName, sAnimationName, bIsGear, true);
 	}
 
-	sleep(5000); // this prevents a postgre database error when opening multiple instances of Daz quickly
 
-	if (nTotalNumberOfInstances > nInstanceNumber) App.showURL('file:///C:/assets/DAZScripts/masterRenderer.lnk');
 
+	if (nTotalNumberOfInstances > nInstanceNumber) {
+
+		sleep(5000); // This prevents a postgre database error when opening multiple instances of Daz quickly
+
+		App.showURL('file:///C:/assets/DAZScripts/masterRenderer.lnk');
+	}
 	/*********************************************************************
 
 								RENDER LOOPS
@@ -201,7 +170,7 @@ if (nTotalNumberOfInstances) {
 			// We could loop through all keys and use the highest frame number, but there might be a performance overhead.
 			// In a random sample, the key we needed was at object #54 out of 810. (would be ~16x slower to loop through all)
 
-			var oFile = new DzFile(aAnimations[j]);
+			var oFile = new DzFileInfo(aAnimations[j]);
 
 			oFile.open(DzFile.ReadOnly);
 			var oJSON = JSON.parse(oFile.read()).scene.animations;
