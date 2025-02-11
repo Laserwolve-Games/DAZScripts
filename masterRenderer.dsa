@@ -124,10 +124,13 @@ if (nTotalNumberOfInstances) {
 					oCanvasDirectory.rmdir();
 				}
 
+				// Looping through all pixels of the output image would be much slower than checking the file size.
 				if (DzFileInfo(sFinalFilePath).size() == 4181) print('WARNING: ' + sFinalFilePath + ' is 4181 bytes. It is likely a blank image.');
 			}
 		}
 
+		// TODO: Would it be faster to change environment settings every frame to render the shadow,
+		// instead of reloading all animations?
 		if (!bIsShadow) renderCore(sName, sAnimationName, bIsGear, true);
 	}
 
@@ -170,7 +173,7 @@ if (nTotalNumberOfInstances) {
 			// We could loop through all keys and use the highest frame number, but there might be a performance overhead.
 			// In a random sample, the key we needed was at object #54 out of 810. (would be ~16x slower to loop through all)
 
-			var oFile = new DzFileInfo(aAnimations[j]);
+			var oFile = new DzFile(aAnimations[j]);
 
 			oFile.open(DzFile.ReadOnly);
 			var oJSON = JSON.parse(oFile.read()).scene.animations;
@@ -218,4 +221,5 @@ if (nTotalNumberOfInstances) {
 		}
 		Scene.removeNode(oSubject);
 	}
+	App.showURL('file:///C:/assets/DAZScripts/makeSpritesheets.ps1');
 }
