@@ -1,12 +1,17 @@
-$outputDir = "C:\output"
-
-$subDirs = Get-ChildItem -Path $outputDir -Directory
+param (
+    [string]$sourceDir = "C:\output",
+    [string]$outputDir = "C:\PlainsOfShinar\spritesheets"
+)
+$subDirs = Get-ChildItem -Path $sourceDir -Directory
 
 foreach ($dir in $subDirs) {
 
     $folderName = $dir.Name
+    $fullName = $dir.FullName
 
-    TexturePacker "C:/assets/DAZScripts/settings.tps" --sheet "$outputDir\$folderName.webp" --data "$outputDir\$folderName.json" $dir.FullName
+    Write-Output "Processing folder: $folderName"
 
-    Remove-Item -Recurse -Force $dir.FullName
+    TexturePacker "settings.tps" --sheet "$outputDir\$folderName.webp" --data "$outputDir\$folderName.json" $fullName
+
+    Remove-Item -Recurse -Force $fullName
 }
