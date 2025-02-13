@@ -167,7 +167,7 @@
             <key>heuristicMask</key>
             <false/>
             <key>defaultPivotPoint</key>
-            <point_f>0.5,0.5</point_f>
+            <point_f>0.5,0.575</point_f>
             <key>writePivotPoints</key>
             <true/>
         </struct>
