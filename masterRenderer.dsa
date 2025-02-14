@@ -73,6 +73,8 @@ if (nTotalNumberOfInstances) {
 
 		for (var nAngle = 0; nAngle != nDEGREES_IN_CIRCLE; nAngle = nAngle + nDegrees) // Loop through each angle...
 		{
+			var nOutputAngle = 90 - nAngle;
+			if (nOutputAngle < -180) nOutputAngle += 360;
 
 			for (var nFrame = 0; nFrame <= nFramesTotal; nFrame++) // Loop through each frame...
 			{
@@ -86,7 +88,7 @@ if (nTotalNumberOfInstances) {
 				var sAngleSuffix = '';
 				if (bIsGear) sNameSuffix = '_gear';
 				if (bIsShadow) sNameSuffix += '_shadow';
-				if (sAnimationName !== 'default') sAngleSuffix = '_' + nAngle;
+				if (sAnimationName !== 'default') sAngleSuffix = '_' + nOutputAngle;
 
 				var sFinalFilePath = 'C:/output/' + sName + sNameSuffix + '/' + sAnimationName + sAngleSuffix + '_' + ("000" + nFrame).slice(-3) + '.png';
 
