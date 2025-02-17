@@ -74,7 +74,7 @@ if (nTotalNumberOfInstances) {
 		for (var nAngle = 0; nAngle != nDEGREES_IN_CIRCLE; nAngle = nAngle + nDegrees) // Loop through each angle...
 		{
 			var nOutputAngle = 90 - nAngle;
-			if (nOutputAngle < -180) nOutputAngle += 360;
+			if (nOutputAngle <= -180) nOutputAngle += 360;
 
 			for (var nFrame = 0; nFrame <= nFramesTotal; nFrame++) // Loop through each frame...
 			{
