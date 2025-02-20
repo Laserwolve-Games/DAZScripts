@@ -223,5 +223,6 @@ if (nTotalNumberOfInstances) {
 		}
 		Scene.removeNode(oSubject);
 	}
-	App.showURL('file:///C:/assets/DAZScripts/makeSpritesheets.ps1');
+	// Only one instance needs to kick off the spritesheet maker
+	if (nInstanceNumber == 1) App.showURL('file:///C:/assets/DAZScripts/makeSpritesheets.lnk');
 }
