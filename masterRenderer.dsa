@@ -172,14 +172,7 @@ if (nTotalNumberOfInstances) {
 
 		else for (var j = 0; j != aAnimations.length; j++) // For each animation...
 		{
-			// First noticed in Daz Studio 4.23, the prompt asking to expand the animation range when importing an animation
-			// that contains more frames than the current playrange is no longer being suppressed by the "-noPrompt" launch flag.
-			// The following workaround opens the animation file into a JSON object, reads the frame range, then sets the playrange.
-			// The animation file must not be compressed. We are also making the assuming that the first quantity of keys found in that JSON
-			// is the total number of frames in the animation. This won't work on animations that were manually tweaked.
-			// We could loop through all keys and use the highest frame number, but there might be a performance overhead.
-			// In a random sample, the key we needed was at object #54 out of 810. (would be ~16x slower to loop through all)
-
+			//https://github.com/Laserwolve-Games/DAZScripts/discussions/1
 			var oAnimationFile = new DzFile(aAnimations[j]);
 
 			oAnimationFile.open(DzFile.ReadOnly);
