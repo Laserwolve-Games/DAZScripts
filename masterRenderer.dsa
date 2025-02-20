@@ -19,9 +19,9 @@ if (nTotalNumberOfInstances) {
 	var oEnvironmentModeProperty = oEnvironmentOptionsPropertyGroups.findProperty("Environment Mode");
 	var oSceneHelper = new DzSceneHelper();
 	var nAngles = 16;
-	var nFrameRate = 30;
 	var nDEGREES_IN_CIRCLE = 360;
 	var nDegrees = nDEGREES_IN_CIRCLE / nAngles;
+	var nFrameRate = 30;
 	var nDAZ_TICKS = 4800;
 	var nTicksPerFrame = nDAZ_TICKS / nFrameRate;
 	var oRoot = Scene.findNodeByLabel('root');
@@ -113,7 +113,6 @@ if (nTotalNumberOfInstances) {
 					setMatte(false);
 					if (bIsGear) oActiveCanvasProperty.setValue(1);
 				}
-
 				while (backgroundProgressIsActive()) processEvents();		// Wait for everything else to finish first, specifically the mesh smoother, then render.
 				oRenderMgr.doRender();
 
@@ -125,19 +124,14 @@ if (nTotalNumberOfInstances) {
 					for (var i = 0; i != aCanvases.length; i++) oCanvasDirectory.remove(aCanvases[i]);
 					oCanvasDirectory.rmdir();
 				}
-
 				// Looping through all pixels of the output image would be much slower than checking the file size.
 				if (DzFileInfo(sFinalFilePath).size() == 4181) print('WARNING: ' + sFinalFilePath + ' is 4181 bytes. It is likely a blank image.');
 			}
 		}
-
 		// TODO: Would it be faster to change environment settings every frame to render the shadow,
 		// instead of reloading all animations?
 		if (!bIsShadow) renderCore(sName, sAnimationName, bIsGear, true);
 	}
-
-
-
 	if (nTotalNumberOfInstances > nInstanceNumber) {
 
 		sleep(5000); // This prevents a postgre database error when opening multiple instances of Daz quickly
@@ -153,6 +147,17 @@ if (nTotalNumberOfInstances) {
 	{
 		oContentMgr.openFile(aSubjects[i], true);		// Merge in a subject, and get its name.
 		var sSubjectName = getName(aSubjects[i]);
+
+		// read the subject's JSON to see how many angles of it we want to render
+		var oSubjectFile = new DzFile(aSubjects[i]);
+
+		oSubjectFile.open(DzFile.ReadOnly);
+		var nAnglesFromJson = JSON.parse(oSubjectFile.read()).asset_info.angles;
+		oSubjectFile.close();
+
+		// Only update nAngles if we actually found a value in the JSON
+		// TODO: We shouldn't be using global variables for some render parameters, and function arguments for others.
+		if (nAnglesFromJson) nAngles = nAngleFromJson;
 
 		var oSubject = Scene.findNodeByLabel('subject');		// Set up the subject.
 		var aSubjectChildren = oSubject.getNodeChildren(true);
@@ -175,25 +180,24 @@ if (nTotalNumberOfInstances) {
 			// We could loop through all keys and use the highest frame number, but there might be a performance overhead.
 			// In a random sample, the key we needed was at object #54 out of 810. (would be ~16x slower to loop through all)
 
-			var oFile = new DzFile(aAnimations[j]);
+			var oAnimationFile = new DzFile(aAnimations[j]);
 
-			oFile.open(DzFile.ReadOnly);
-			var oJSON = JSON.parse(oFile.read()).scene.animations;
-			oFile.close();
+			oAnimationFile.open(DzFile.ReadOnly);
+			var oAnimationsJson = JSON.parse(oFile.read()).scene.animations;
+			oAnimationFile.close();
 
-			for (var i = 0; i < oJSON.length; i++) {
+			for (var i = 0; i < oAnimationsJson.length; i++) {
 
-				var nNumberOfFrames = oJSON[i].keys.length;
-			
+				var nNumberOfFrames = oAnimationsJson[i].keys.length;
+
 				if (nNumberOfFrames > 1) {
 
 					// Subtract 1 here to make it 0-based
 					Scene.setAnimRange(DzTimeRange(0, (nNumberOfFrames - 1) * nTicksPerFrame));
-			
+
 					break;
 				}
 			}
-
 			oContentMgr.openFile(aAnimations[j], true); // only the subject can be selected when we merge in an animation
 
 			var sAnimationName = getName(aAnimations[j]);
