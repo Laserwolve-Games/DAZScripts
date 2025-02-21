@@ -18,7 +18,8 @@ foreach ($dir in $subDirs) {
 
     Write-Output "Processing folder: $folderName"
 
-    TexturePacker "settings.tps" --sheet "$outputDir\temp\$folderName-{n}.webp" --data "$outputDir\temp\$folderName-{n}.json" $fullName
+    # Underscores instead of dashes in the file name weren't working
+    TexturePacker "settings.tps" --sheet "$outputDir\$folderName\$folderName-{n}.webp" --data "$outputDir\$folderName\$folderName-{n}.json" $fullName
 
     if ((Test-Path "$outputDir\$folderName.webp") -and (Test-Path "$outputDir\$folderName.json")) {
         Remove-Item -Recurse -Force $fullName
