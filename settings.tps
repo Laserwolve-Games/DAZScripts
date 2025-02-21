@@ -80,9 +80,9 @@
         <key>maxTextureSize</key>
         <QSize>
             <key>width</key>
-            <int>16384</int>
+            <int>2048</int>
             <key>height</key>
-            <int>16384</int>
+            <int>2048</int>
         </QSize>
         <key>fixedTextureSize</key>
         <QSize>
@@ -128,7 +128,7 @@
             </struct>
         </map>
         <key>multiPackMode</key>
-        <enum type="SettingsBase::MultiPackMode">MultiPackOff</enum>
+        <enum type="SettingsBase::MultiPackMode">MultiPackAuto</enum>
         <key>forceIdenticalLayout</key>
         <false/>
         <key>outputFormat</key>
