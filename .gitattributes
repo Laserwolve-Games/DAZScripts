@@ -2,7 +2,5 @@
 * text=auto
 #.tps files are showing up as PL/SQL in GitHub, but it's actually TexturePacker Settings
 *.tps linguist-detectable=false
-# GitHub doesn't support DazScript, so the next closest thing is Qt Script
-#Since Qt Script has a space in it's name, we 
-*.dsa linguist-language=558193693
-# *.dsa linguist-language=QML
+# Daz Script language detection issues: https://github.com/Laserwolve-Games/DAZScripts/discussions/2
+*.dsa linguist-language=QML
