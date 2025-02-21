@@ -3,4 +3,4 @@
 #.tps files are showing up as PL/SQL in GitHub, but it's actually TexturePacker Settings
 *.tps linguist-detectable=false
 # GitHub doesn't support DazScript, so the next closest thing is QtScript
-*.dsa linguist-language=QtScript
+*.dsa linguist-language=Ruby
