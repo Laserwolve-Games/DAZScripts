@@ -1,161 +1,149 @@
 var oContentMgr = App.getContentMgr();
-var nTotalNumberOfInstances = App.scriptArgs[0]/* ? App.scriptArgs[0] : 1*/;
-oContentMgr.openFile('C:/assets/templates/masterTemplate.duf', false);
+var nTotalNumberOfInstances = App.scriptArgs[0];
+var sMasterTemplatePath = 'C:/assets/templates/masterTemplate.duf';
 
-if (nTotalNumberOfInstances) {
-	var nInstanceNumber = App.instanceName()/* ? App.instanceName() : 1*/;
-	var oInputDirectory = new DzDir('C:/input');
-	var aSubjects = oInputDirectory.getFilesFromDir(['*_subject.duf'], true);
-	var aAnimations = oInputDirectory.getFilesFromDir(['*_animation.duf'], true);
-	var aGear = oInputDirectory.getFilesFromDir(['*_gear.duf'], true);
+oContentMgr.openFile(sMasterTemplatePath, false);
 
-	var oRenderMgr = App.getRenderMgr();
-	var oIrayOptions = oRenderMgr.getRenderElementObjects()[1];
-	var oEnvironmentOptionsPropertyGroups = oRenderMgr.getRenderElementObjects()[3].getPropertyGroups();
-	var oRenderOptions = oRenderMgr.getRenderOptions();
-	var oViewport = MainWindow.getViewportMgr().getActiveViewport().get3DViewport();
-	var oActiveCanvasProperty = oIrayOptions.getPropertyGroups().findProperty('Active Canvas');
-	var oDrawGroundProperty = oEnvironmentOptionsPropertyGroups.findProperty("Draw Ground");
-	var oEnvironmentModeProperty = oEnvironmentOptionsPropertyGroups.findProperty("Environment Mode");
-	var oSceneHelper = new DzSceneHelper();
-	var nAngles = 16;
-	var nDEGREES_IN_CIRCLE = 360;
-	var nDegrees = nDEGREES_IN_CIRCLE / nAngles;
-	var nFrameRate = 30;
-	var nDAZ_TICKS = 4800;
-	var nTicksPerFrame = nDAZ_TICKS / nFrameRate;
-	var oRoot = Scene.findNodeByLabel('root');
-	var oShadowPlane = Scene.findNodeByLabel('shadowPlane');
-	var bOverwriteExistingImages = false;
+var nInstanceNumber = App.instanceName();
+var oInputDirectory = new DzDir('C:/input');
+var aSubjects = oInputDirectory.getFilesFromDir(['*_subject.duf'], true);
+var aAnimations = oInputDirectory.getFilesFromDir(['*_animation.duf'], true);
+var aGear = oInputDirectory.getFilesFromDir(['*_gear.duf'], true);
+var oRenderMgr = App.getRenderMgr();
+var oIrayOptions = oRenderMgr.getRenderElementObjects()[1];
+var oEnvironmentOptionsPropertyGroups = oRenderMgr.getRenderElementObjects()[3].getPropertyGroups();
+var oRenderOptions = oRenderMgr.getRenderOptions();
+var oViewport = MainWindow.getViewportMgr().getActiveViewport().get3DViewport();
+var oActiveCanvasProperty = oIrayOptions.getPropertyGroups().findProperty('Active Canvas');
+var oDrawGroundProperty = oEnvironmentOptionsPropertyGroups.findProperty("Draw Ground");
+var oEnvironmentModeProperty = oEnvironmentOptionsPropertyGroups.findProperty("Environment Mode");
+var oSceneHelper = new DzSceneHelper();
+var nDEGREES_IN_CIRCLE = 360;
+var nFrameRate = 30;
+var nDAZ_TICKS = 4800;
+var nTicksPerFrame = nDAZ_TICKS / nFrameRate;
+var oRoot = Scene.findNodeByLabel('root');
+var oShadowPlane = Scene.findNodeByLabel('shadowPlane');
+var bOverwriteExistingImages = false;
 
-	/*********************************************************************/
-	function getName(sFileName) // Obtain the desired name out of a filepath or filename.
-	{
-		return sFileName.split('/').pop().split('_')[0];
+function getName(sFileName) // Obtain the desired name out of a filepath or filename.
+{
+	return sFileName.split('/').pop().split('_')[0];
+}
+function setMatte(bBool) // Set the Matte Parameter of a subject and its children.
+{
+	if (oSubjectMatteParameter) oSubjectMatteParameter.setValue(bBool);
+
+	for (var i = 0; i != aSubjectChildren.length; i++) {
+		var oChildMatteParameter = aSubjectChildren[i].findPropertyByLabel('Enable Iray Matte');
+		if (oChildMatteParameter) oChildMatteParameter.setValue(bBool);
 	}
-	/*********************************************************************/
-	function setMatte(bBool) // Set the Matte Parameter of a subject and its children.
+}
+function renderCore(sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
+	if (aChildPropertyControllers) for (var i = 0; i != aChildPropertyControllers.length; i++) // then for each of the child property controllers...
 	{
-		if (oSubjectMatteParameter) oSubjectMatteParameter.setValue(bBool);
+		/* 
+		Use the name of the property in the "Custom" category to find the property to which to link it.
+		e.g.,
+		BowOnnaStick-StikkbowDrawn
+		Default Bolt-Opacity Strength-shaft
+		The the first value is the node label. The second value is the property label. The third value is the material name, and is optional.
+		The owner of a property usually is a DzNode, but it might be a DzMorph. The DzNode method "findPropertyByLabel" won't work for properties owned by a DzMorph.
+		The "findPropertyOnNodeByLabel" method in the DzSceneHelper convenience object must be used to accommodate this scenario.
+		*/
+		var oChildPropertyController = aChildPropertyControllers[i];
+		var aTargetPropertyParameters = oChildPropertyController.name.split("-");
+		var oTargetNode = Scene.findNodeByLabel(aTargetPropertyParameters[0]);
+		var sTargetPropertyName = aTargetPropertyParameters[1];
+		var sTargetMaterial = aTargetPropertyParameters[2];
+		var oTarget;
+		if (sTargetMaterial) oTarget = oSceneHelper.findPropertyOnMaterialByLabel(sTargetPropertyName, oTargetNode.getObject().getCurrentShape().findMaterial(sTargetMaterial));
+		else oTarget = oSceneHelper.findPropertyOnNodeByLabel(sTargetPropertyName, oTargetNode);
 
-		for (var i = 0; i != aSubjectChildren.length; i++) {
-			var oChildMatteParameter = aSubjectChildren[i].findPropertyByLabel('Enable Iray Matte');
-			if (oChildMatteParameter) oChildMatteParameter.setValue(bBool);
-		}
+		oTarget.linkTo(oChildPropertyController);
 	}
-	/*********************************************************************/
-	function renderCore(sName, sAnimationName, bIsGear, bIsShadow) {
-		if (aChildPropertyControllers) for (var i = 0; i != aChildPropertyControllers.length; i++) // then for each of the child property controllers...
+
+	// variables that have to be determined when we start rendering
+	var nFramesTotal = Scene.getPlayRange().end / nTicksPerFrame;
+
+	for (var nAngle = 0; nAngle != nDEGREES_IN_CIRCLE; nAngle = nAngle + nDegrees) // Loop through each angle...
+	{
+		var nOutputAngle = 90 - nAngle;
+		if (nOutputAngle <= -180) nOutputAngle += 360;
+
+		for (var nFrame = 0; nFrame <= nFramesTotal; nFrame++) // Loop through each frame...
 		{
-			/* 
-			Use the name of the property in the "Custom" category to find the property to which to link it.
-			e.g.,
-			BowOnnaStick-StikkbowDrawn
-			Default Bolt-Opacity Strength-shaft
-			The the first value is the node label. The second value is the property label. The third value is the material name, and is optional.
-			The owner of a property usually is a DzNode, but it might be a DzMorph. The DzNode method "findPropertyByLabel" won't work for properties owned by a DzMorph.
-			The "findPropertyOnNodeByLabel" method in the DzSceneHelper convenience object must be used to accommodate this scenario.
-			*/
-			var oChildPropertyController = aChildPropertyControllers[i];
-			var aTargetPropertyParameters = oChildPropertyController.name.split("-");
-			var oTargetNode = Scene.findNodeByLabel(aTargetPropertyParameters[0]);
-			var sTargetPropertyName = aTargetPropertyParameters[1];
-			var sTargetMaterial = aTargetPropertyParameters[2];
-			var oTarget;
-			if (sTargetMaterial) oTarget = oSceneHelper.findPropertyOnMaterialByLabel(sTargetPropertyName, oTargetNode.getObject().getCurrentShape().findMaterial(sTargetMaterial));
-			else oTarget = oSceneHelper.findPropertyOnNodeByLabel(sTargetPropertyName, oTargetNode);
+			// subtract 1 from the instance number to make it 0 based.
+			// if we subtract the 0-based instanced number from the frame,
+			// then check if that number is divisible by the total number of instances,
+			// we'll find out if the current instance should render the current frame.
+			if ((nFrame - (nInstanceNumber - 1)) % nTotalNumberOfInstances != 0) continue;
 
-			oTarget.linkTo(oChildPropertyController);
-		}
+			// Example: C:/output/shadow_broadsword(man)/shadow_broadsword(man)_block_-22.5_012.png
+			var sFinalFilePath = 'C:/output/' + (bIsShadow ? 'shadow_' : '') + sName + '/'
+			+ (bIsShadow ? 'shadow_' : '') + sName + '_' + sAnimationName + '_' + nOutputAngle + '_' + ("000" + nFrame).slice(-3) + '.png';
 
-		// variables that have to be determined when we start rendering
-		var nFramesTotal = Scene.getPlayRange().end / nTicksPerFrame;
+			// If the image we're going to make already exists, skip it if we have flagged as such.
+			if (oInputDirectory.exists(sFinalFilePath) && !bOverwriteExistingImages) continue;
+			oRenderOptions.renderImgFilename = sFinalFilePath; // Set the filepath.
 
-		for (var nAngle = 0; nAngle != nDEGREES_IN_CIRCLE; nAngle = nAngle + nDegrees) // Loop through each angle...
-		{
-			var nOutputAngle = 90 - nAngle;
-			if (nOutputAngle <= -180) nOutputAngle += 360;
+			Scene.setFrame(nFrame);
+			oRoot.getYRotControl().setValue(nAngle); // Do this every frame, or else it will interpolate.
 
-			for (var nFrame = 0; nFrame <= nFramesTotal; nFrame++) // Loop through each frame...
-			{
-				// subtract 1 from the instance number to make it 0 based.
-				// if we subtract the 0-based instanced number from the frame,
-				// then check if that number is divisible by the total number of instances,
-				// we'll find out if the current instance should render the current frame.
-				if ((nFrame - (nInstanceNumber - 1)) % nTotalNumberOfInstances != 0) continue;
-
-				// Example: C:/output/shadow_broadsword(man)/shadow_broadsword(man)_block_-22.5_012.png
-				var sFinalFilePath = 'C:/output/' + (bIsShadow ? 'shadow_' : '') + sName + '/'
-				+ (bIsShadow ? 'shadow_' : '') + sName + '_' + sAnimationName + '_' + nOutputAngle + '_' + ("000" + nFrame).slice(-3) + '.png';
-
-				// If the image we're going to make already exists, skip it if we have flagged as such.
-				if (oInputDirectory.exists(sFinalFilePath) && !bOverwriteExistingImages) continue;
-				oRenderOptions.renderImgFilename = sFinalFilePath; // Set the filepath.
-
-				Scene.setFrame(nFrame);
-				oRoot.getYRotControl().setValue(nAngle); // Do this every frame, or else it will interpolate.
-
-				if (bIsShadow) {
-					oEnvironmentModeProperty.setValue(3); // Scene Only
-					oDrawGroundProperty.setValue(true);
-					oShadowPlane.setVisible(true);
-					oActiveCanvasProperty.setValue(0);
-					if (bIsGear) setMatte(true);
-				}
-				else {
-					oEnvironmentModeProperty.setValue(2); // Sun-Sky Only
-					oDrawGroundProperty.setValue(false);
-					oShadowPlane.setVisible(false);
-					setMatte(false);
-					if (bIsGear) oActiveCanvasProperty.setValue(1);
-				}
-				while (backgroundProgressIsActive()) processEvents();		// Wait for everything else to finish first, specifically the mesh smoother, then render.
-				oRenderMgr.doRender();
-
-				var oCanvasDirectory = DzDir(sFinalFilePath.replace('.png', '_canvases'));
-
-				if (oCanvasDirectory.exists())  // If canvases were made, delete all of them, then delete the canvas folder.
-				{
-					var aCanvases = oCanvasDirectory.getFilesFromDir(['*.exr'], true);
-					for (var i = 0; i != aCanvases.length; i++) oCanvasDirectory.remove(aCanvases[i]);
-					oCanvasDirectory.rmdir();
-				}
-				// Looping through all pixels of the output image would be much slower than checking the file size.
-				if (DzFileInfo(sFinalFilePath).size() == 4181) print('WARNING: ' + sFinalFilePath + ' is 4181 bytes. It is likely a blank image.');
+			if (bIsShadow) {
+				oEnvironmentModeProperty.setValue(3); // Scene Only
+				oDrawGroundProperty.setValue(true);
+				oShadowPlane.setVisible(true);
+				oActiveCanvasProperty.setValue(0);
+				if (bIsGear) setMatte(true);
 			}
+			else {
+				oEnvironmentModeProperty.setValue(2); // Sun-Sky Only
+				oDrawGroundProperty.setValue(false);
+				oShadowPlane.setVisible(false);
+				setMatte(false);
+				if (bIsGear) oActiveCanvasProperty.setValue(1);
+			}
+			while (backgroundProgressIsActive()) processEvents();		// Wait for everything else to finish first, specifically the mesh smoother, then render.
+			oRenderMgr.doRender();
+
+			var oCanvasDirectory = DzDir(sFinalFilePath.replace('.png', '_canvases'));
+
+			if (oCanvasDirectory.exists())  // If canvases were made, delete all of them, then delete the canvas folder.
+			{
+				var aCanvases = oCanvasDirectory.getFilesFromDir(['*.exr'], true);
+				for (var i = 0; i != aCanvases.length; i++) oCanvasDirectory.remove(aCanvases[i]);
+				oCanvasDirectory.rmdir();
+			}
+			// Looping through all pixels of the output image would be much slower than checking the file size.
+			if (DzFileInfo(sFinalFilePath).size() == 4181) print('WARNING: ' + sFinalFilePath + ' is 4181 bytes. It is likely a blank image.');
 		}
-		// TODO: Would it be faster to change environment settings every frame to render the shadow,
-		// instead of reloading all animations?
-		if (!bIsShadow) renderCore(sName, sAnimationName, bIsGear, true);
 	}
+	// TODO: Would it be faster to change environment settings every frame to render the shadow,
+	// instead of reloading all animations?
+	if (!bIsShadow) renderCore(sName, nDegrees, sAnimationName, bIsGear, true);
+}
+if (nTotalNumberOfInstances) {
+
 	if (nTotalNumberOfInstances > nInstanceNumber) {
 
 		sleep(5000); // This prevents a postgre database error when opening multiple instances of Daz quickly
 
 		App.showURL('file:///C:/assets/DAZScripts/masterRenderer.lnk');
 	}
-	/*********************************************************************
-
-								RENDER LOOPS
-
-	*********************************************************************/
 	for (var i = 0; i != aSubjects.length; i++) // For each subject...
 	{
 		oContentMgr.openFile(aSubjects[i], true);		// Merge in a subject, and get its name.
-		var sSubjectName = getName(aSubjects[i]);
 
-		// read the subject's JSON to see how many angles of it we want to render
+		var sSubjectName = getName(aSubjects[i]);
 		var oSubjectFile = new DzFile(aSubjects[i]);
 
+		// read the subject's JSON to see how many angles of it we want to render
 		oSubjectFile.open(DzFile.ReadOnly);
-		var nAnglesFromJson = JSON.parse(oSubjectFile.read()).asset_info.angles;
+		var nAngles = JSON.parse(oSubjectFile.read()).asset_info.angles;
 		oSubjectFile.close();
 
-		// Only update nAngles if we actually found a value in the JSON
-		// TODO: We shouldn't be using global variables for some render parameters, and function arguments for others.
-		// This isn't working for some reason
-		// nAnglesFromJson ?  nAngles = nAnglesFromJson : nAngles = 16;
-
+		var nDegrees = nDEGREES_IN_CIRCLE / nAngles;
 		var oSubject = Scene.findNodeByLabel('subject');		// Set up the subject.
 		var aSubjectChildren = oSubject.getNodeChildren(true);
 		var oSubjectMatteParameter = oSubject.findPropertyByLabel('Enable Iray Matte');
@@ -165,11 +153,11 @@ if (nTotalNumberOfInstances) {
 
 		oRoot.addNodeChild(oSubject, true);
 
-		if (!aAnimations.length) renderCore(sSubjectName, 'default', false, false);
+		if (!aAnimations.length) renderCore(sSubjectName, nDegrees, 'default', false, false);
 
 		else for (var j = 0; j != aAnimations.length; j++) // For each animation...
 		{
-			//https://github.com/Laserwolve-Games/DAZScripts/discussions/1
+			// https://github.com/Laserwolve-Games/DAZScripts/discussions/1
 			var oAnimationFile = new DzFile(aAnimations[j]);
 
 			oAnimationFile.open(DzFile.ReadOnly);
@@ -192,7 +180,7 @@ if (nTotalNumberOfInstances) {
 
 			var sAnimationName = getName(aAnimations[j]);
 
-			if (!aGear.length) renderCore(sSubjectName, sAnimationName, false, false);
+			if (!aGear.length) renderCore(sSubjectName, nDegrees, sAnimationName, false, false);
 
 			else for (var k = 0; k != aGear.length; k++) // If there are gears, for each gear...
 			{
@@ -206,7 +194,7 @@ if (nTotalNumberOfInstances) {
 
 				for (var ii = 0; ii != aGearChildren.length; ii++) oIrayOptions.addNodeToNodeList('visibleNodes', aGearChildren[ii]); // Add all gear children to the canvas as well.
 
-				renderCore(sSubjectName + '_' + sGearName, sAnimationName, true, false);
+				renderCore(sSubjectName + '_' + sGearName, nDegrees, sAnimationName, true, false);
 
 				Scene.removeNode(oGear);
 			}
