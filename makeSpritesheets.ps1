@@ -9,6 +9,8 @@ while (Get-Process -Name "DazStudio" -ErrorAction SilentlyContinue) {
     Start-Sleep -Seconds 5
 }
 
+TexturePacker --version
+
 $subDirs = Get-ChildItem -Path $sourceDir -Directory
 
 foreach ($dir in $subDirs) {
