@@ -25,11 +25,6 @@ foreach ($dir in $subDirs) {
     }
 }
 
-# Execute the generateManifest.ps1 script
-$manifestScriptPath = "C:\assets\DAZScripts\generateManifest.ps1"
-if (Test-Path $manifestScriptPath) {
-    Write-Output "Executing generateManifest.ps1..."
-    & $manifestScriptPath
-} else {
-    Write-Output "generateManifest.ps1 not found at $manifestScriptPath"
-}
+# Create the manifest
+$manifestScriptPath = Join-Path -Path $PSScriptRoot -ChildPath "generateManifest.ps1"
+& $manifestScriptPath -targetDirectory $outputDir

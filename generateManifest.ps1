@@ -1,5 +1,5 @@
 param (
-    [string]$targetDirectory = "C:\PlainsOfShinar\spritesheets"
+    [string]$targetDirectory # = "C:\PlainsOfShinar\spritesheets"
 )
 
 $items = Get-ChildItem -Path $targetDirectory -Recurse
