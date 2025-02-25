@@ -79,9 +79,9 @@ function renderCore(sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 			// we'll find out if the current instance should render the current frame.
 			if ((nFrame - (nInstanceNumber - 1)) % nTotalNumberOfInstances != 0) continue;
 
-			// Example: C:/output/shadow_broadsword(man)/shadow_broadsword(man)_block_-22.5_012.png
-			var sFinalFilePath = 'C:/output/' + (bIsShadow ? 'shadow_' : '') + sName + '/'
-			+ (bIsShadow ? 'shadow_' : '') + sName + '_' + sAnimationName + '_' + nOutputAngle + '_' + ("000" + nFrame).slice(-3) + '.png';
+			// Example: C:/output/broadsword(man)/shadow_broadsword(man)_block_-22.5_012.png
+			var sFinalFilePath = 'C:/output/' + sName + '/' + (bIsShadow ? 'shadow_' : '') + sName
+			+ '_' + sAnimationName + '_' + nOutputAngle + '_' + ("000" + nFrame).slice(-3) + '.png';
 
 			// If the image we're going to make already exists, skip it if we have flagged as such.
 			if (oInputDirectory.exists(sFinalFilePath) && !bOverwriteExistingImages) continue;

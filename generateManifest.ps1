@@ -1,21 +1,25 @@
 param (
-    [string]$targetDirectory # = "C:\PlainsOfShinar\spritesheets"
+    [string]$targetDirectory = "C:\PlainsOfShinar\spritesheets",
+    [string]$manifestFileName = "manifest.json"
 )
 
 $items = Get-ChildItem -Path $targetDirectory -Recurse
 
-$outputData = @() # Initialize as an array
+$folderData = @{}
 
 foreach ($item in $items) {
-    $outputData += [pscustomobject]@{
-        Name = $item.Name
-        FullName = $item.FullName
-        ItemType = if ($item.PSIsContainer) { "Directory" } else { "File" }
+    if (-not $item.PSIsContainer -and $item.Name -ne $manifestFileName) {
+        $folderName = (Split-Path -Parent $item.FullName | Split-Path -Leaf)
+        if (-not $folderData.ContainsKey($folderName)) {
+            $folderData[$folderName] = @()
+        }
+        $relativePath = $item.FullName -replace [regex]::Escape("C:\PlainsOfShinar"), "."
+        $folderData[$folderName] += $relativePath
     }
 }
 
-$outputJson = $outputData | ConvertTo-Json -Depth 10
-$outputJsonPath = Join-Path -Path $targetDirectory -ChildPath "manifest.json"
+$outputJson = $folderData | ConvertTo-Json -Depth 10
+$outputJsonPath = Join-Path -Path $targetDirectory -ChildPath $manifestFileName
 
 $outputJson | Set-Content -Path $outputJsonPath
 
