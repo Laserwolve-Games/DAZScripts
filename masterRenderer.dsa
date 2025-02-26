@@ -5,10 +5,9 @@ var sMasterTemplatePath = 'C:/assets/templates/masterTemplate.duf';
 oContentMgr.openFile(sMasterTemplatePath, false);
 
 var nInstanceNumber = App.instanceName();
-var oInputDirectory = new DzDir('C:/input');
-var aSubjects = oInputDirectory.getFilesFromDir(['*_subject.duf'], true);
-var aAnimations = oInputDirectory.getFilesFromDir(['*_animation.duf'], true);
-var aGear = oInputDirectory.getFilesFromDir(['*_gear.duf'], true);
+var sInputDirectory = 'C:/input';
+var oInputDirectory = new DzDir(sInputDirectory);
+var aSets = oInputDirectory.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
 var oRenderMgr = App.getRenderMgr();
 var oIrayOptions = oRenderMgr.getRenderElementObjects()[1];
 var oEnvironmentOptionsPropertyGroups = oRenderMgr.getRenderElementObjects()[3].getPropertyGroups();
@@ -39,9 +38,11 @@ function setMatte(bBool) // Set the Matte Parameter of a subject and its childre
 		if (oChildMatteParameter) oChildMatteParameter.setValue(bBool);
 	}
 }
-function renderCore(sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
+function renderCore(sSet, sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 	if (aChildPropertyControllers) for (var i = 0; i != aChildPropertyControllers.length; i++) // then for each of the child property controllers...
 	{
+
+		// TODO: I think this is broken
 		/* 
 		Use the name of the property in the "Custom" category to find the property to which to link it.
 		e.g.,
@@ -80,7 +81,8 @@ function renderCore(sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 			if ((nFrame - (nInstanceNumber - 1)) % nTotalNumberOfInstances != 0) continue;
 
 			// Example: C:/output/broadsword(man)/shadow_broadsword(man)_block_-22.5_012.png
-			var sFinalFilePath = 'C:/output/' + sName + '/' + (bIsShadow ? 'shadow_' : '') + sName
+			// Example: C:/output/windmillLevel2/barrel_default_000.png
+			var sFinalFilePath = 'C:/output/' + sSet + '/' + (bIsShadow ? 'shadow_' : '') + sName
 			+ '_' + sAnimationName + '_' + nOutputAngle + '_' + ("000" + nFrame).slice(-3) + '.png';
 
 			// If the image we're going to make already exists, skip it if we have flagged as such.
@@ -121,7 +123,7 @@ function renderCore(sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 	}
 	// TODO: Would it be faster to change environment settings every frame to render the shadow,
 	// instead of reloading all animations?
-	if (!bIsShadow) renderCore(sName, nDegrees, sAnimationName, bIsGear, true);
+	if (!bIsShadow) renderCore(sSet, sName, nDegrees, sAnimationName, bIsGear, true);
 }
 if (nTotalNumberOfInstances) {
 
@@ -131,79 +133,92 @@ if (nTotalNumberOfInstances) {
 
 		App.showURL('file:///C:/assets/DAZScripts/masterRenderer.lnk');
 	}
-	for (var i = 0; i != aSubjects.length; i++) // For each subject...
-	{
-		oContentMgr.openFile(aSubjects[i], true);		// Merge in a subject, and get its name.
 
-		var sSubjectName = getName(aSubjects[i]);
-		var oSubjectFile = new DzFile(aSubjects[i]);
+	for (var s = 0; s != aSets.length; s++) {
 
-		// read the subject's JSON to see how many angles of it we want to render
-		oSubjectFile.open(DzFile.ReadOnly);
-		var nAngles = JSON.parse(oSubjectFile.read()).asset_info.angles;
-		oSubjectFile.close();
+		var sSet = aSets[s];
+		var sSetDirectory = sInputDirectory + '/' + sSet;
+		var oSetDirectory = new DzDir(sSetDirectory);
 
-		var nDegrees = nDEGREES_IN_CIRCLE / nAngles;
-		var oSubject = Scene.findNodeByLabel('subject');		// Set up the subject.
-		var aSubjectChildren = oSubject.getNodeChildren(true);
-		var oSubjectMatteParameter = oSubject.findPropertyByLabel('Enable Iray Matte');
-		var oCustomPropertyGroup = oSubject.getPropertyGroups().findChild("Custom");
-		var aChildPropertyControllers;
-		if (oCustomPropertyGroup) aChildPropertyControllers = oCustomPropertyGroup.getAllProperties();
+		var aSubjects = oSetDirectory.getFilesFromDir(['*_subject.duf'], false);
+		var aAnimations = oSetDirectory.getFilesFromDir(['*_animation.duf'], false);
+		var aGear = oSetDirectory.getFilesFromDir(['*_gear.duf'], false);
 
-		oRoot.addNodeChild(oSubject, true);
-
-		if (!aAnimations.length) renderCore(sSubjectName, nDegrees, 'default', false, false);
-
-		else for (var j = 0; j != aAnimations.length; j++) // For each animation...
+		for (var i = 0; i != aSubjects.length; i++) // For each subject...
 		{
-			// https://github.com/Laserwolve-Games/DAZScripts/discussions/1
-			var oAnimationFile = new DzFile(aAnimations[j]);
-
-			oAnimationFile.open(DzFile.ReadOnly);
-			var oAnimationsJson = JSON.parse(oFile.read()).scene.animations;
-			oAnimationFile.close();
-
-			for (var i = 0; i < oAnimationsJson.length; i++) {
-
-				var nNumberOfFrames = oAnimationsJson[i].keys.length;
-
-				if (nNumberOfFrames > 1) {
-
-					// Subtract 1 here to make it 0-based
-					Scene.setAnimRange(DzTimeRange(0, (nNumberOfFrames - 1) * nTicksPerFrame));
-
-					break;
-				}
-			}
-			oContentMgr.openFile(aAnimations[j], true); // only the subject can be selected when we merge in an animation
-
-			var sAnimationName = getName(aAnimations[j]);
-
-			if (!aGear.length) renderCore(sSubjectName, nDegrees, sAnimationName, false, false);
-
-			else for (var k = 0; k != aGear.length; k++) // If there are gears, for each gear...
+			oContentMgr.openFile(aSubjects[i], true);		// Merge in a subject, and get its name.
+	
+			var sSubjectName = getName(aSubjects[i]);
+			var oSubjectFile = new DzFile(aSubjects[i]);
+	
+			// read the subject's JSON to see how many angles of it we want to render
+			oSubjectFile.open(DzFile.ReadOnly);
+			var nAngles = JSON.parse(oSubjectFile.read()).asset_info.angles;
+			oSubjectFile.close();
+	
+			var nDegrees = nDEGREES_IN_CIRCLE / nAngles;
+			var oSubject = Scene.findNodeByLabel('subject');		// Set up the subject.
+			var aSubjectChildren = oSubject.getNodeChildren(true);
+			var oSubjectMatteParameter = oSubject.findPropertyByLabel('Enable Iray Matte');
+			var oCustomPropertyGroup = oSubject.getPropertyGroups().findChild("Custom");
+			var aChildPropertyControllers;
+			if (oCustomPropertyGroup) aChildPropertyControllers = oCustomPropertyGroup.getAllProperties();
+	
+			oRoot.addNodeChild(oSubject, true);
+	
+			if (!aAnimations.length) renderCore(sSet, sSubjectName, nDegrees, 'default', false, false);
+	
+			else for (var j = 0; j != aAnimations.length; j++) // For each animation...
 			{
-				oContentMgr.openFile(aGear[k], true);
-				var sGearName = getName(aGear[k]);
-				var oGear = Scene.findNodeByLabel('gear');
-
-				var aGearChildren = oGear.getNodeChildren(false);
-
-				oIrayOptions.addNodeToNodeList('visibleNodes', oGear); // Add the gear to the canvas.
-
-				for (var ii = 0; ii != aGearChildren.length; ii++) oIrayOptions.addNodeToNodeList('visibleNodes', aGearChildren[ii]); // Add all gear children to the canvas as well.
-
-				renderCore(sSubjectName + '_' + sGearName, nDegrees, sAnimationName, true, false);
-
-				Scene.removeNode(oGear);
+				// https://github.com/Laserwolve-Games/DAZScripts/discussions/1
+				var oAnimationFile = new DzFile(aAnimations[j]);
+	
+				oAnimationFile.open(DzFile.ReadOnly);
+				var oAnimationsJson = JSON.parse(oFile.read()).scene.animations;
+				oAnimationFile.close();
+	
+				for (var i = 0; i < oAnimationsJson.length; i++) {
+	
+					var nNumberOfFrames = oAnimationsJson[i].keys.length;
+	
+					if (nNumberOfFrames > 1) {
+	
+						// Subtract 1 here to make it 0-based
+						Scene.setAnimRange(DzTimeRange(0, (nNumberOfFrames - 1) * nTicksPerFrame));
+	
+						break;
+					}
+				}
+				oContentMgr.openFile(aAnimations[j], true); // only the subject can be selected when we merge in an animation
+	
+				var sAnimationName = getName(aAnimations[j]);
+	
+				if (!aGear.length) renderCore(sSet, sSubjectName, nDegrees, sAnimationName, false, false);
+	
+				else for (var k = 0; k != aGear.length; k++) // If there are gears, for each gear...
+				{
+					oContentMgr.openFile(aGear[k], true);
+					var sGearName = getName(aGear[k]);
+					var oGear = Scene.findNodeByLabel('gear');
+	
+					var aGearChildren = oGear.getNodeChildren(false);
+	
+					oIrayOptions.addNodeToNodeList('visibleNodes', oGear); // Add the gear to the canvas.
+	
+					for (var ii = 0; ii != aGearChildren.length; ii++) oIrayOptions.addNodeToNodeList('visibleNodes', aGearChildren[ii]); // Add all gear children to the canvas as well.
+	
+					// TODO: This is probably wrong now that we are using parentheses?
+					renderCore(sSet, sSubjectName + '_' + sGearName, nDegrees, sAnimationName, true, false);
+	
+					Scene.removeNode(oGear);
+				}
+				// Custom parameter keys don't always exist. They have to be manually cleared after each animation
+				if (aChildPropertyControllers) for (var i = 0; i != aChildPropertyControllers.length; i++) aChildPropertyControllers[i].deleteAllKeys();
+	
+				Scene.setAnimRange(DzTimeRange(0, 0));
 			}
-			// Custom parameter keys don't always exist. They have to be manually cleared after each animation
-			if (aChildPropertyControllers) for (var i = 0; i != aChildPropertyControllers.length; i++) aChildPropertyControllers[i].deleteAllKeys();
-
-			Scene.setAnimRange(DzTimeRange(0, 0));
+			Scene.removeNode(oSubject);
 		}
-		Scene.removeNode(oSubject);
 	}
 	// Only one instance needs to kick off the spritesheet maker
 	if (nInstanceNumber == 1) App.showURL('file:///C:/assets/DAZScripts/makeSpritesheets.lnk');

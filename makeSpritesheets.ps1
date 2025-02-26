@@ -23,7 +23,7 @@ foreach ($dir in $subDirs) {
     TexturePacker "settings.tps" --sheet "$outputDir\$folderName\$folderName-{n}.webp" --data "$outputDir\$folderName\$folderName-{n}.json" $fullName
 
     # remove the source folder if files were successfully created
-    if (Test-Path "$outputDir\$folderName" -and (Get-ChildItem "$outputDir\$folderName" | Measure-Object).Count -gt 0) {
+    if ((Test-Path "$outputDir\$folderName") -and ((Get-ChildItem "$outputDir\$folderName" | Measure-Object).Count -gt 0)) {
         Remove-Item -Recurse -Force $fullName
     }
 }
