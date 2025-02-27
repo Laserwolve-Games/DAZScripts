@@ -3,7 +3,7 @@ param (
     [string]$manifestFileName = "manifest.json"
 )
 
-$items = Get-ChildItem -Path $targetDirectory -Recurse
+$items = Get-ChildItem -Path $targetDirectory -Recurse -Filter *.json
 
 $folderData = @{}
 
