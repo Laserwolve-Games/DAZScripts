@@ -1,11 +1,16 @@
+var sStartTime = new Date().toLocaleString().replace(':', '-').replace(':', '-'); // colons aren't allowed in folder names
 var oContentMgr = App.getContentMgr();
 var nTotalNumberOfInstances = App.scriptArgs[0];
-var sMasterTemplatePath = 'C:/assets/templates/masterTemplate.duf';
+var sAssetPath = 'C:/Users/Andre/OneDrive/assets/';
+var sMasterTemplatePath = sAssetPath + 'templates/masterTemplate.duf';
 
 oContentMgr.openFile(sMasterTemplatePath, false);
 
+var oScriptFileInfo = new DzFileInfo(getScriptFileName());
+var sScriptPath = oScriptFileInfo.path();
 var nInstanceNumber = App.instanceName();
-var sInputDirectory = 'C:/input';
+var sInputDirectory = sAssetPath + 'input';
+var sOutputDirectory = sAssetPath + 'output/Unfinished - Started ' + sStartTime;
 var oInputDirectory = new DzDir(sInputDirectory);
 var aSets = oInputDirectory.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
 var oRenderMgr = App.getRenderMgr();
@@ -80,9 +85,9 @@ function renderCore(sSet, sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 			// we'll find out if the current instance should render the current frame.
 			if ((nFrame - (nInstanceNumber - 1)) % nTotalNumberOfInstances != 0) continue;
 
-			// Example: C:/output/broadsword(man)/shadow_broadsword(man)_block_-22.5_012.png
-			// Example: C:/output/windmillLevel2/barrel_default_000.png
-			var sFinalFilePath = 'C:/output/' + sSet + '/' + (bIsShadow ? 'shadow_' : '') + sName
+			// Example: C:/Users/Andre/OneDrive/assets/output/Friday, March 21, 2025 11:36:24/broadsword(man)/shadow_broadsword(man)_block_-22.5_012.png
+			// Example: C:/Users/Andre/OneDrive/assets/output/Friday, March 21, 2025 11:36:24/windmillLevel2/barrel_default_000.png
+			var sFinalFilePath = sOutputDirectory + '/' + sSet + '/' + (bIsShadow ? 'shadow_' : '') + sName
 			+ '_' + sAnimationName + '_' + nOutputAngle + '_' + ("000" + nFrame).slice(-3) + '.png';
 
 			// If the image we're going to make already exists, skip it if we have flagged as such.
@@ -109,6 +114,7 @@ function renderCore(sSet, sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 			while (backgroundProgressIsActive()) processEvents();		// Wait for everything else to finish first, specifically the mesh smoother, then render.
 			oRenderMgr.doRender();
 
+			// TODO: Why aren't we using 'new' here?
 			var oCanvasDirectory = DzDir(sFinalFilePath.replace('.png', '_canvases'));
 
 			if (oCanvasDirectory.exists())  // If canvases were made, delete all of them, then delete the canvas folder.
@@ -131,7 +137,7 @@ if (nTotalNumberOfInstances) {
 
 		sleep(5000); // This prevents a postgre database error when opening multiple instances of Daz quickly
 
-		App.showURL('file:///C:/assets/DAZScripts/masterRenderer.lnk');
+		App.showURL('file:///' + sScriptPath + '/masterRenderer.lnk');
 	}
 
 	for (var s = 0; s != aSets.length; s++) {
@@ -174,7 +180,7 @@ if (nTotalNumberOfInstances) {
 				var oAnimationFile = new DzFile(aAnimations[j]);
 	
 				oAnimationFile.open(DzFile.ReadOnly);
-				var oAnimationsJson = JSON.parse(oFile.read()).scene.animations;
+				var oAnimationsJson = JSON.parse(oAnimationFile.read()).scene.animations;
 				oAnimationFile.close();
 	
 				for (var i = 0; i < oAnimationsJson.length; i++) {
@@ -220,8 +226,13 @@ if (nTotalNumberOfInstances) {
 			Scene.removeNode(oSubject);
 		}
 	}
-	// Only one instance needs to kick off the spritesheet maker
-	if (nInstanceNumber == 1) App.showURL('file:///C:/assets/DAZScripts/makeSpritesheets.lnk');
+	// Tasks that only one instance should perform
+	if (nInstanceNumber == 1) {
 
+		// Rename the directory to 'complete' only if we get to this line
+		new DzDir(sOutputDirectory).rename(sOutputDirectory, sOutputDirectory.replace('Unfinished', 'Complete'));
+
+		App.showURL('file:///' + sScriptPath + '/makeSpritesheets.lnk');
+	}
 	App.delayedExit();
 }
