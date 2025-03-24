@@ -9,9 +9,13 @@ var oScriptFileInfo = new DzFileInfo(getScriptFileName());
 var sScriptPath = oScriptFileInfo.path();
 var nInstanceNumber = App.instanceName();
 var sInputDirectory = sAssetPath + 'input';
-var oExistingOutputDirectories = new DzDir(sAssetPath + 'output');
-var aExistingOutputDirectories = oExistingOutputDirectories.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
-var sOutputDirectory = sAssetPath + 'output/Automated Render #' + (aExistingOutputDirectories.length + 1);
+
+// Might use these later
+// var oExistingOutputDirectories = new DzDir(sAssetPath + 'output');
+// var aExistingOutputDirectories = oExistingOutputDirectories.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
+// var sOutputDirectory = sAssetPath + 'output/Automated Render #' + (aExistingOutputDirectories.length + 1);
+
+var sOutputDirectory = sAssetPath + 'output';
 var sSpritesheetOutputDirectory = 'C:\PlainsOfShinar\spritesheets'; // Backslashes are used here because this is a parameter for PowerShell.
 var oInputDirectory = new DzDir(sInputDirectory);
 var aSets = oInputDirectory.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
