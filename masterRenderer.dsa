@@ -1,4 +1,3 @@
-var sStartTime = new Date().toLocaleString().replace(':', '-').replace(':', '-'); // colons aren't allowed in folder names
 var oContentMgr = App.getContentMgr();
 var nTotalNumberOfInstances = App.scriptArgs[0];
 var sAssetPath = 'C:/Users/Andre/OneDrive/assets/';
@@ -10,7 +9,10 @@ var oScriptFileInfo = new DzFileInfo(getScriptFileName());
 var sScriptPath = oScriptFileInfo.path();
 var nInstanceNumber = App.instanceName();
 var sInputDirectory = sAssetPath + 'input';
-var sOutputDirectory = sAssetPath + 'output/Unfinished - Started ' + sStartTime;
+var oExistingOutputDirectories = new DzDir(sAssetPath + 'output');
+var aExistingOutputDirectories = oExistingOutputDirectories.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
+var sOutputDirectory = sAssetPath + 'output/Automated Render #' + (aExistingOutputDirectories.length + 1);
+var sSpritesheetOutputDirectory = 'C:\PlainsOfShinar\spritesheets'; // Backslashes are used here because this is a parameter for PowerShell.
 var oInputDirectory = new DzDir(sInputDirectory);
 var aSets = oInputDirectory.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
 var oRenderMgr = App.getRenderMgr();
@@ -124,7 +126,7 @@ function renderCore(sSet, sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 				oCanvasDirectory.rmdir();
 			}
 			// Looping through all pixels of the output image would be much slower than checking the file size.
-			if (DzFileInfo(sFinalFilePath).size() == 4181) print('WARNING: ' + sFinalFilePath + ' is 4181 bytes. It is likely a blank image.');
+			if (DzFileInfo(sFinalFilePath).size() == 4181) App.warning(sFinalFilePath + ' is 4181 bytes. It is likely a blank image.');
 		}
 	}
 	// TODO: Would it be faster to change environment settings every frame to render the shadow,
@@ -135,8 +137,10 @@ if (nTotalNumberOfInstances) {
 
 	if (nTotalNumberOfInstances > nInstanceNumber) {
 
+		// TODO: Can we use App.isStarting() instead?
 		sleep(5000); // This prevents a postgre database error when opening multiple instances of Daz quickly
 
+		// TODO: is App.isSlave() true for these instances?
 		App.showURL('file:///' + sScriptPath + '/masterRenderer.lnk');
 	}
 
@@ -159,8 +163,14 @@ if (nTotalNumberOfInstances) {
 	
 			// read the subject's JSON to see how many angles of it we want to render
 			oSubjectFile.open(DzFile.ReadOnly);
-			var nAngles = JSON.parse(oSubjectFile.read()).asset_info.angles;
+			var nAnglesFromJson = JSON.parse(oSubjectFile.read()).asset_info.angles;
 			oSubjectFile.close();
+
+			var nAngles = 16;
+
+			if (nAnglesFromJson) nAngles = nAnglesFromJson;
+			else App.warning('Number of angles not found in the JSON for ' + aSubjects[i] +
+				'. Using default of value of ' + nAngles + ' angles.');
 	
 			var nDegrees = nDEGREES_IN_CIRCLE / nAngles;
 			var oSubject = Scene.findNodeByLabel('subject');		// Set up the subject.
@@ -230,9 +240,18 @@ if (nTotalNumberOfInstances) {
 	if (nInstanceNumber == 1) {
 
 		// Rename the directory to 'complete' only if we get to this line
-		new DzDir(sOutputDirectory).rename(sOutputDirectory, sOutputDirectory.replace('Unfinished', 'Complete'));
+		// new DzDir(sOutputDirectory).rename(sOutputDirectory, sOutputDirectory.replace('Unfinished', 'Complete'));
 
-		App.showURL('file:///' + sScriptPath + '/makeSpritesheets.lnk');
+		var sTempPath = App.getTempPath();
+
+		var oSpritesheetExecutor = new DzFile(sTempPath + '/spriteSheetExecutor.ps1');
+		var sSpritesheetExecutorCode = sScriptPath + '/makeSpritesheets.ps1 -sourceDirectory ' + sOutputDirectory + ' -outputDirectory ' + sSpritesheetOutputDirectory;
+
+		oSpritesheetExecutor.open(DzFile.WriteOnly);
+		oSpritesheetExecutor.write(sSpritesheetExecutorCode);
+		oSpritesheetExecutor.close();
+
+		App.showURL('file:///' + sScriptPath + '/spriteSheetExecutor.ps1');
 	}
 	App.delayedExit();
 }
