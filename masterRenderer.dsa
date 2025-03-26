@@ -16,7 +16,7 @@ var sInputDirectory = sAssetPath + 'input';
 // var sOutputDirectory = sAssetPath + 'output/Automated Render #' + (aExistingOutputDirectories.length + 1);
 
 var sOutputDirectory = sAssetPath + 'output';
-var sSpritesheetOutputDirectory = 'C:\PlainsOfShinar\spritesheets'; // Backslashes are used here because this is a parameter for PowerShell.
+var sSpritesheetOutputDirectory = 'C:/PlainsOfShinar/spritesheets';
 var oInputDirectory = new DzDir(sInputDirectory);
 var aSets = oInputDirectory.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
 var oRenderMgr = App.getRenderMgr();
@@ -145,7 +145,7 @@ if (nTotalNumberOfInstances) {
 		sleep(5000); // This prevents a postgre database error when opening multiple instances of Daz quickly
 
 		// TODO: is App.isSlave() true for these instances?
-		App.showURL('file:///' + sScriptPath + '/masterRenderer.lnk');
+		App.showURL('file:///' + sScriptPath + '/masterRenderer.ps1');
 	}
 
 	for (var s = 0; s != aSets.length; s++) {
@@ -190,7 +190,7 @@ if (nTotalNumberOfInstances) {
 	
 			else for (var j = 0; j != aAnimations.length; j++) // For each animation...
 			{
-				// https://github.com/Laserwolve-Games/DAZScripts/discussions/1
+				// Expand play range using animation JSON data: https://github.com/Laserwolve-Games/DAZScripts/discussions/1
 				var oAnimationFile = new DzFile(aAnimations[j]);
 	
 				oAnimationFile.open(DzFile.ReadOnly);
@@ -225,7 +225,8 @@ if (nTotalNumberOfInstances) {
 	
 					oIrayOptions.addNodeToNodeList('visibleNodes', oGear); // Add the gear to the canvas.
 	
-					for (var ii = 0; ii != aGearChildren.length; ii++) oIrayOptions.addNodeToNodeList('visibleNodes', aGearChildren[ii]); // Add all gear children to the canvas as well.
+					// Add all gear children to the canvas as well.
+					for (var ii = 0; ii != aGearChildren.length; ii++) oIrayOptions.addNodeToNodeList('visibleNodes', aGearChildren[ii]);
 	
 					// TODO: This is probably wrong now that we are using parentheses?
 					renderCore(sSet, sSubjectName + '_' + sGearName, nDegrees, sAnimationName, true, false);
@@ -246,16 +247,18 @@ if (nTotalNumberOfInstances) {
 		// Rename the directory to 'complete' only if we get to this line
 		// new DzDir(sOutputDirectory).rename(sOutputDirectory, sOutputDirectory.replace('Unfinished', 'Complete'));
 
+		// Execute a PowerShell script with arguments: https://github.com/Laserwolve-Games/DAZScripts/discussions/3
 		var sTempPath = App.getTempPath();
-
-		var oSpritesheetExecutor = new DzFile(sTempPath + '/spriteSheetExecutor.ps1');
+		// This has to be a .cmd and not a .ps1 and I don't know why
+		var oSpritesheetExecutor = new DzFile(sTempPath + '/spriteSheetExecutor.cmd');
 		var sSpritesheetExecutorCode = sScriptPath + '/makeSpritesheets.ps1 -sourceDirectory ' + sOutputDirectory + ' -outputDirectory ' + sSpritesheetOutputDirectory;
+
 
 		oSpritesheetExecutor.open(DzFile.WriteOnly);
 		oSpritesheetExecutor.write(sSpritesheetExecutorCode);
 		oSpritesheetExecutor.close();
 
-		App.showURL('file:///' + sScriptPath + '/spriteSheetExecutor.ps1');
+		App.showURL('file:///' + sTempPath + '/spriteSheetExecutor.cmd');
 	}
 	App.delayedExit();
 }

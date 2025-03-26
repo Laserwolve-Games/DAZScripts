@@ -1,0 +1,1 @@
+Start-Process -FilePath "C:\Program Files\DAZ 3D\DAZStudio4\DAZStudio.exe" -ArgumentList "-instanceName", "#", "-scriptArg", "1", "-logSize", "500000000", "-noPrompt"
