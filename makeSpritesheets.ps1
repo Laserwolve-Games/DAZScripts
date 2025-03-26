@@ -1,6 +1,6 @@
 param (
-    [string]$sourceDir = "C:\output",
-    [string]$outputDir = "C:\PlainsOfShinar\spritesheets"
+    [string]$sourceDirectory,
+    [string]$outputDirectory
 )
 
 # Wait until no processes named "DazStudio" are running
@@ -11,7 +11,10 @@ while (Get-Process -Name "DazStudio" -ErrorAction SilentlyContinue) {
 
 TexturePacker --version
 
-$subDirs = Get-ChildItem -Path $sourceDir -Directory
+Write-Output "Source Directory: $sourceDirectory"
+Write-Output "Output Directory: $outputDirectory"
+
+$subDirs = Get-ChildItem -Path $sourceDirectory -Directory
 
 foreach ($dir in $subDirs) {
 
@@ -20,9 +23,9 @@ foreach ($dir in $subDirs) {
 
     Write-Output "Processing folder: $folderName"
 
-    TexturePacker "settings.tps" --sheet "$outputDir\$folderName\$folderName-{n}.webp" --data "$outputDir\$folderName\$folderName-{n}.json" $fullName
+    TexturePacker "settings.tps" --sheet "$outputDirectory\$folderName\$folderName-{n}.webp" --data "$outputDirectory\$folderName\$folderName-{n}.json" $fullName
 }
-
+Read-Host -Prompt "Press Enter to continue"
 # Create the manifest
 $manifestScriptPath = Join-Path -Path $PSScriptRoot -ChildPath "generateManifest.ps1"
-& $manifestScriptPath -targetDirectory $outputDir
+& $manifestScriptPath -targetDirectory $outputDirectory

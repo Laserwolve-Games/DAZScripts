@@ -96,8 +96,8 @@ function renderCore(sSet, sName, nDegrees, sAnimationName, bIsGear, bIsShadow) {
 			var sFinalFilePath = sOutputDirectory + '/' + sSet + '/' + (bIsShadow ? 'shadow_' : '') + sName
 			+ '_' + sAnimationName + '_' + nOutputAngle + '_' + ("000" + nFrame).slice(-3) + '.png';
 
-			// If the image we're going to make already exists, skip it if we have flagged as such.
-			if (oInputDirectory.exists(sFinalFilePath) && !bOverwriteExistingImages) continue;
+			// If the image we're going to make already exists and isn't 0 bytes, skip it if we have flagged as such.
+			if (oInputDirectory.exists(sFinalFilePath) && DzFileInfo(sFinalFilePath).size != 0 && !bOverwriteExistingImages) continue;
 			oRenderOptions.renderImgFilename = sFinalFilePath; // Set the filepath.
 
 			Scene.setFrame(nFrame);
@@ -158,12 +158,12 @@ if (nTotalNumberOfInstances) {
 		var aAnimations = oSetDirectory.getFilesFromDir(['*_animation.duf'], false);
 		var aGear = oSetDirectory.getFilesFromDir(['*_gear.duf'], false);
 
-		for (var i = 0; i != aSubjects.length; i++) // For each subject...
+		for (var nSubjectCounter = 0; nSubjectCounter != aSubjects.length; nSubjectCounter++) // For each subject...
 		{
-			oContentMgr.openFile(aSubjects[i], true);		// Merge in a subject, and get its name.
+			oContentMgr.openFile(aSubjects[nSubjectCounter], true);		// Merge in a subject, and get its name.
 	
-			var sSubjectName = getName(aSubjects[i]);
-			var oSubjectFile = new DzFile(aSubjects[i]);
+			var sSubjectName = getName(aSubjects[nSubjectCounter]);
+			var oSubjectFile = new DzFile(aSubjects[nSubjectCounter]);
 	
 			// read the subject's JSON to see how many angles of it we want to render
 			oSubjectFile.open(DzFile.ReadOnly);
@@ -173,7 +173,7 @@ if (nTotalNumberOfInstances) {
 			var nAngles = 16;
 
 			if (nAnglesFromJson) nAngles = nAnglesFromJson;
-			else App.warning('Number of angles not found in the JSON for ' + aSubjects[i] +
+			else App.warning('Number of angles not found in the JSON for ' + aSubjects[nSubjectCounter] +
 				'. Using default of value of ' + nAngles + ' angles.');
 	
 			var nDegrees = nDEGREES_IN_CIRCLE / nAngles;
@@ -238,21 +238,18 @@ if (nTotalNumberOfInstances) {
 	
 				Scene.setAnimRange(DzTimeRange(0, 0));
 			}
-			Scene.removeNode(oSubject);
+			if (oSubject) Scene.removeNode(oSubject);
 		}
 	}
 	// Tasks that only one instance should perform
 	if (nInstanceNumber == 1) {
 
-		// Rename the directory to 'complete' only if we get to this line
-		// new DzDir(sOutputDirectory).rename(sOutputDirectory, sOutputDirectory.replace('Unfinished', 'Complete'));
-
 		// Execute a PowerShell script with arguments: https://github.com/Laserwolve-Games/DAZScripts/discussions/3
 		var sTempPath = App.getTempPath();
 		// This has to be a .cmd and not a .ps1 and I don't know why
 		var oSpritesheetExecutor = new DzFile(sTempPath + '/spriteSheetExecutor.cmd');
-		var sSpritesheetExecutorCode = sScriptPath + '/makeSpritesheets.ps1 -sourceDirectory ' + sOutputDirectory + ' -outputDirectory ' + sSpritesheetOutputDirectory;
-
+		var sSpritesheetExecutorCode = 'powershell -NoProfile -ExecutionPolicy Bypass -File '
+		+ sScriptPath + '/makeSpritesheets.ps1 -sourceDirectory "' + sOutputDirectory + '" -outputDirectory "' + sSpritesheetOutputDirectory + '"';
 
 		oSpritesheetExecutor.open(DzFile.WriteOnly);
 		oSpritesheetExecutor.write(sSpritesheetExecutorCode);
