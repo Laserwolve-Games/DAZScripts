@@ -1,5 +1,5 @@
 param (
-    [string]$targetDirectory = "C:\PlainsOfShinar\spritesheets",
+    [string]$targetDirectory = "C:\Users\Andre\OneDrive\repositories\PlainsOfShinar\spritesheets",
     [string]$manifestFileName = "manifest.json"
 )
 
@@ -13,7 +13,7 @@ foreach ($item in $items) {
         if (-not $folderData.ContainsKey($folderName)) {
             $folderData[$folderName] = @()
         }
-        $relativePath = $item.FullName -replace [regex]::Escape("C:\PlainsOfShinar"), "."
+        $relativePath = $item.FullName -replace [regex]::Escape("C:\Users\Andre\OneDrive\repositories\PlainsOfShinar"), "."
         $folderData[$folderName] += $relativePath
     }
 }

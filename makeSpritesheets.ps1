@@ -25,7 +25,7 @@ foreach ($dir in $subDirs) {
 
     TexturePacker "settings.tps" --sheet "$outputDirectory\$folderName\$folderName-{n}.webp" --data "$outputDirectory\$folderName\$folderName-{n}.json" $fullName
 }
-Read-Host -Prompt "Press Enter to continue"
+
 # Create the manifest
 $manifestScriptPath = Join-Path -Path $PSScriptRoot -ChildPath "generateManifest.ps1"
 & $manifestScriptPath -targetDirectory $outputDirectory

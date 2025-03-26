@@ -16,7 +16,7 @@ var sInputDirectory = sAssetPath + 'input';
 // var sOutputDirectory = sAssetPath + 'output/Automated Render #' + (aExistingOutputDirectories.length + 1);
 
 var sOutputDirectory = sAssetPath + 'output';
-var sSpritesheetOutputDirectory = 'C:/PlainsOfShinar/spritesheets';
+var sSpritesheetOutputDirectory = 'C:/Users/Andre/OneDrive/repositories/PlainsOfShinar/spritesheets';
 var oInputDirectory = new DzDir(sInputDirectory);
 var aSets = oInputDirectory.entryList(['*'], DzDir.Dirs | DzDir.NoDotAndDotDot);
 var oRenderMgr = App.getRenderMgr();
