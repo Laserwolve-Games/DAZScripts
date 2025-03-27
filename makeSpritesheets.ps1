@@ -1,6 +1,7 @@
 param (
     [string]$sourceDirectory,
-    [string]$outputDirectory
+    [string]$outputDirectory,
+    [string]$manifestFileName = "manifest.json"
 )
 
 # Wait until no processes named "DazStudio" are running
@@ -27,5 +28,28 @@ foreach ($dir in $subDirs) {
 }
 
 # Create the manifest
-$manifestScriptPath = Join-Path -Path $PSScriptRoot -ChildPath "generateManifest.ps1"
-& $manifestScriptPath -targetDirectory $outputDirectory
+$items = Get-ChildItem -Path $outputDirectory -Recurse -Filter *.json
+
+$folderData = @{}
+
+foreach ($item in $items) {
+    if (-not $item.PSIsContainer -and $item.Name -ne $manifestFileName) {
+        $folderName = (Split-Path -Parent $item.FullName | Split-Path -Leaf)
+        if (-not $folderData.ContainsKey($folderName)) {
+            $folderData[$folderName] = @()
+        }
+
+        # Make the path relative to the spritesheets directory
+        $relativePath = $item.FullName -replace [regex]::Escape($targetDirectory.substring(0,$targetDirectory.IndexOf('\spritesheets'))), "."
+        # Replace the escaped backslashes with forward slashes
+        $relativePath = $relativePath -replace "\\", "/"
+        $folderData[$folderName] += $relativePath
+    }
+}
+
+$outputJson = $folderData | ConvertTo-Json -Depth 10
+$outputJsonPath = Join-Path -Path $outputDirectory -ChildPath $manifestFileName
+
+$outputJson | Set-Content -Path $outputJsonPath
+
+Write-Output "JSON file created at $outputJsonPath"
