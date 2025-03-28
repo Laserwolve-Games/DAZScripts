@@ -1,1 +1,1 @@
-Various scripts used when making ARPGs with [Daz Studio](https://www.daz3d.com/).
+Various scripts used when developing art assets for [DaggerQuest](https://github.com/Laserwolve-Games/DaggerQuest) and [Plains Of Shinar](https://github.com/Laserwolve-Games/PlainsOfShinar) with [Daz Studio](https://www.daz3d.com/).
